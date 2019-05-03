@@ -6,6 +6,7 @@ import operator
 
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.model_selection import train_test_split
+from sklearn import datasets, linear_model
 
 #fungsi buat dapetin jarak eucledian
 #data1 = data pertama
@@ -22,21 +23,22 @@ def eucledianDistance(data1, data2, length):
 #trainingset = data training / ground truth
 #testdata = data testing / data yang diuji
 #k = tetangga
-def getNeighbors(trainingSet, testData, k):
+def getNeighbors(trainingSet, testData, testClass, k):
     #array distance untuk nyimpan jarak, nanti akan disort yang tedekat
+    # print(len(testData))
     distance = []
-    length = len(testData)
-    for x in range(len(trainingSet)):
+    length = len(testData) - 1
+    for x in range(len(trainingSet) - 110):
         dist = eucledianDistance(testData, trainingSet[x], length)
-        distance.append((trainingSet[x], dist))
+        distance.append((trainingSet[x], testClass[x], dist))
         # print((trainingSet[x], dist))
-    distance.sort(key=operator.itemgetter(1))
+    distance.sort(key=operator.itemgetter(2))
     # print(distance)
     neighbors = []
     for x in range(k):
         #habis disort, data tetangga terdekat disimpan di array neighbors
-        neighbors.append(distance[x][0])
-    # print(trainingSet[x])
+        neighbors.append(distance[x][0:2])
+    # print(neighbors)
     return neighbors
 
 #fungsi getResponse buat nyari datatest masuk kelas mana / voting kelasnya
@@ -54,55 +56,62 @@ def getResponse(neighbors):
     # print(classVote)
     # sortedVotes buat milih vote kelas terbanyak
     sortedVotes = sorted(classVote.items(), key=operator.itemgetter(1), reverse=True)
+    # print(sortedVotes[0][0])
     return sortedVotes[0][0]
 
+#fungsu getAccuracy untuk mendapatkan nilai akurasi
+#testData adalah kelas dari data yang dicek
+#prediction adalah prediksi kelas dari data yang dicek
+def getAccuracy(testData, predictions):
+    correct = 0
+    for x in range(len(testData)):
+        #jika prediksi benar, maka nilai correct bertambah +1
+        if testData[x] is predictions[x]:
+            correct += 1
+    #mengembalikan nilai return persentase
+    return (correct/float(len(testData))) * 100.0
 
-trainSet = [[2, 2, 2, 'a'], [4, 4, 4, 'b'], [5, 5, 5, 'b'], [5.5, 5.5, 5.5, 'b'], [5.1, 5.2, 5.1, 'a']]
-testData = [5, 5, 5]
-k = 3
-neighbors = getNeighbors(trainSet, testData, k)
-# print(neighbors)
+#Load dataset
+path = "dataset/iris.data"
 
-response = getResponse(neighbors)
-print("testData termasuk ke dalam kelas: " + response)
+namesIris = [
+    'sepal-length',
+    'sepal-width',
+    'petal-width',
+    'petal-length',
+    'class'
+]
+dataset = pd.read_csv(path, names=namesIris)
 
-# path = "dataset/iris.data"
-#
-# names = [
-#     'sepal-length',
-#     'sepal-width',
-#     'petal-width',
-#     'petal-length',
-#     'class'
-# ]
-#
-# dataset = pd.read_csv(path, names=names)
-# dataset.dropna(how="all", inplace=True)
-#
-# x = dataset.iloc[:, 0:4].values
-# y = dataset.iloc[:, 4].values
-#
-# print(x)
+##Dataset preprocessing
+#membagi jadi 2, X untuk nilai numerik, Y untuk nama kelas
+X = dataset.iloc[:, :-1].values
+Y = dataset.iloc[:, -1].values
+# print(X)
+# print(Y)
+
+#split dataset 20% train-80% test
+x_train, x_test, y_train, y_test = train_test_split(X, Y, test_size=0.2)
+
+#MinMaxNormalization
+#Mengubah nilai numerik menjadi antara 0-1
+#ini kalo gak pake fungsi library
 # print(((x[:, 0] - x[:, 0].min()) / (x[:, 0].max() - x[:, 0].min())))
-#
-# scaler = MinMaxScaler()
-# print(scaler.fit(x))
-# print(scaler.transform(x))
-#
-#
-#
-# x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.2)
+scaler = MinMaxScaler()
+scaler.fit(x_train)
+x_train = scaler.transform(x_train)
+scaler.fit(x_test)
+x_test = scaler.transform(x_test)
 
-#
-# x_train = scaler.transform(x_train)
-# x_test = scaler.transform(x_test)
-#
-# from sklearn.neighbors import KNeighborsClassifier
-# classifier = KNeighborsClassifier(n_neighbors=5)
-# classifier.fit(x_train, y_train)
-#
-# y_pred = classifier.predict(x_test)
-#
-# from sklearn.metrics import classification_report, confusion_matrix
-# print(confusion_matrix(y_test, y_pred))
-# print(classification_report(y_test, y_pred))
+prediction = []
+for i in range(len(x_test)):
+    #mendapatkan tetangga terdekat
+    neighbors = getNeighbors(x_train, x_test[i], y_train, 3)
+    #mendapatkan kelas berdasarkan tetangga terdekat
+    result = getResponse(neighbors)
+    #memasukkan nilai kelas ke array prediction
+    prediction.append(result)
+    print('> predicted=' + repr(result) + ', actual=' + repr(y_test[i]) + str(x_test[i]))
+#menghitung akurasi dengan mengecek antara akurasi dengan nama kelas yang sebenarnya
+accuracy = getAccuracy(y_test, prediction)
+print('Accuracy: ' + repr(accuracy) + "%")
