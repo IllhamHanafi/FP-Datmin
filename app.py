@@ -6,7 +6,7 @@ import operator
 
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.model_selection import train_test_split
-from sklearn import datasets, linear_model
+from sklearn.model_selection import KFold
 
 #fungsi buat dapetin jarak eucledian
 #data1 = data pertama
@@ -25,10 +25,10 @@ def eucledianDistance(data1, data2, length):
 #k = tetangga
 def getNeighbors(trainingSet, testData, testClass, k):
     #array distance untuk nyimpan jarak, nanti akan disort yang tedekat
-    # print(len(testData))
+    # print(trainingSet[0])
     distance = []
     length = len(testData) - 1
-    for x in range(len(trainingSet) - 110):
+    for x in range(len(trainingSet)):
         dist = eucledianDistance(testData, trainingSet[x], length)
         distance.append((trainingSet[x], testClass[x], dist))
         # print((trainingSet[x], dist))
@@ -64,20 +64,19 @@ def getResponse(neighbors):
 #prediction adalah prediksi kelas dari data yang dicek
 def getAccuracy(testData, predictions):
     correct = 0
-    print(len(testData))
-    print(len(predictions))
+    # print(len(testData))
+    # print(predictions)
     for x in range(len(testData)):
         #jika prediksi benar, maka nilai correct bertambah +1
         if testData[x] == predictions[x]:
             correct += 1
     #mengembalikan nilai return persentase
-    print(correct)
     return (correct/float(len(testData))) * 100.0
 
 #Load dataset
-# path = "dataset/iris.data"
+path = "dataset/iris.data"
 # path = "dataset/transfusion.data"
-path = "dataset/bupa.data"
+# path = "dataset/bupa.data"
 
 namesIris = [
     'sepal-length',
@@ -87,7 +86,7 @@ namesIris = [
     'class'
 ]
 
-nameTransfusion = [
+namesTransfusion = [
     'Recency',
     'Frequency',
     'Monetary',
@@ -95,7 +94,7 @@ nameTransfusion = [
     'Yes/No Donate'
 ]
 
-nameBupa = [
+namesBupa = [
     'mcv',
     'alkphos',
     'sgpt',
@@ -104,9 +103,9 @@ nameBupa = [
     'drinks',
     'selector'
 ]
-dataset = pd.read_csv(path, names=nameBupa)
-print(len(dataset))
-lul = dataset.sample(n=5)
+dataset = pd.read_csv(path, names=namesIris)
+
+
 ##Dataset preprocessing
 #membagi jadi 2, X untuk nilai numerik, Y untuk nama kelas
 X = dataset.iloc[:, :-1].values
@@ -131,14 +130,47 @@ x_test = scaler.transform(x_test)
 prediction = []
 for i in range(len(x_test)):
     #mendapatkan tetangga terdekat
-    neighbors = getNeighbors(x_train, x_test[i], y_train, 2)
+    neighbors = getNeighbors(x_train, x_test[i], y_train, 3)
     #mendapatkan kelas berdasarkan tetangga terdekat
     result = getResponse(neighbors)
     #memasukkan nilai kelas ke array prediction
     prediction.append(result)
-    print('> predicted=' + repr(result) + ', actual=' + repr(y_test[i]) + str(x_test[i]))
+    print('> predicted=' + repr(result) + ', actual=' + repr(y_test[i]))
+    neighbors.clear()
 #menghitung akurasi dengan mengecek antara akurasi dengan nama kelas yang sebenarnya
 accuracy = getAccuracy(y_test, prediction)
-print(y_test)
-print(prediction)
-print('Accuracy: ' + repr(accuracy) + "%")
+prediction.clear()
+# print(y_test)
+# print(prediction)
+print('Non-KFold Accuracy: ' + repr(accuracy) + "%")
+fold = 0
+KF_xtrain = []
+KF_xtest = []
+KF_ytrain = []
+KF_ytest = []
+kfold = KFold(n_splits=3, shuffle=True, random_state=True)
+for train, test in kfold.split(X, Y):
+    # print('train: %s, test: %s' % (X[train], X[test]))
+    KF_xtrain.append(X[train])
+    KF_xtest.append(X[test])
+    KF_ytrain.append(Y[train])
+    KF_ytest.append(Y[test])
+    for j in range(len(KF_xtest[0])):
+        neighbors = getNeighbors(KF_xtrain[0], KF_xtest[0][j], KF_ytrain[0], 3)
+        result = getResponse(neighbors)
+        prediction.append(result)
+        neighbors.clear()
+    accuracy = getAccuracy(KF_ytest[0], prediction)
+    prediction.clear()
+    # print(y_test)
+    # print(prediction)
+    print('KFold' + str(fold) + 'Accuracy: ' + repr(accuracy) + "%")
+    KF_xtest.clear()
+    KF_xtrain.clear()
+    KF_ytest.clear()
+    KF_ytrain.clear()
+    # print(train)
+    # print(test)
+    # print(KF_xtrain)
+    # for j in range(len(test)):
+        # KFold_neighbors = getNeighbors()
