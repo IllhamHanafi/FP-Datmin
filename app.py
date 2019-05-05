@@ -64,15 +64,20 @@ def getResponse(neighbors):
 #prediction adalah prediksi kelas dari data yang dicek
 def getAccuracy(testData, predictions):
     correct = 0
+    print(len(testData))
+    print(len(predictions))
     for x in range(len(testData)):
         #jika prediksi benar, maka nilai correct bertambah +1
-        if testData[x] is predictions[x]:
+        if testData[x] == predictions[x]:
             correct += 1
     #mengembalikan nilai return persentase
+    print(correct)
     return (correct/float(len(testData))) * 100.0
 
 #Load dataset
-path = "dataset/iris.data"
+# path = "dataset/iris.data"
+# path = "dataset/transfusion.data"
+path = "dataset/bupa.data"
 
 namesIris = [
     'sepal-length',
@@ -81,12 +86,32 @@ namesIris = [
     'petal-length',
     'class'
 ]
-dataset = pd.read_csv(path, names=namesIris)
 
+nameTransfusion = [
+    'Recency',
+    'Frequency',
+    'Monetary',
+    'Time',
+    'Yes/No Donate'
+]
+
+nameBupa = [
+    'mcv',
+    'alkphos',
+    'sgpt',
+    'sgot',
+    'gammagt',
+    'drinks',
+    'selector'
+]
+dataset = pd.read_csv(path, names=nameBupa)
+print(len(dataset))
+lul = dataset.sample(n=5)
 ##Dataset preprocessing
 #membagi jadi 2, X untuk nilai numerik, Y untuk nama kelas
 X = dataset.iloc[:, :-1].values
 Y = dataset.iloc[:, -1].values
+
 # print(X)
 # print(Y)
 
@@ -106,7 +131,7 @@ x_test = scaler.transform(x_test)
 prediction = []
 for i in range(len(x_test)):
     #mendapatkan tetangga terdekat
-    neighbors = getNeighbors(x_train, x_test[i], y_train, 3)
+    neighbors = getNeighbors(x_train, x_test[i], y_train, 2)
     #mendapatkan kelas berdasarkan tetangga terdekat
     result = getResponse(neighbors)
     #memasukkan nilai kelas ke array prediction
@@ -114,4 +139,6 @@ for i in range(len(x_test)):
     print('> predicted=' + repr(result) + ', actual=' + repr(y_test[i]) + str(x_test[i]))
 #menghitung akurasi dengan mengecek antara akurasi dengan nama kelas yang sebenarnya
 accuracy = getAccuracy(y_test, prediction)
+print(y_test)
+print(prediction)
 print('Accuracy: ' + repr(accuracy) + "%")
