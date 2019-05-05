@@ -143,7 +143,7 @@ prediction.clear()
 # print(y_test)
 # print(prediction)
 print('Non-KFold Accuracy: ' + repr(accuracy) + "%")
-fold = 0
+fold = 1
 KF_xtrain = []
 KF_xtest = []
 KF_ytrain = []
@@ -165,6 +165,7 @@ for train, test in kfold.split(X, Y):
     # print(y_test)
     # print(prediction)
     print('KFold' + str(fold) + 'Accuracy: ' + repr(accuracy) + "%")
+    fold += 1
     KF_xtest.clear()
     KF_xtrain.clear()
     KF_ytest.clear()
