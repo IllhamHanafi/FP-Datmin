@@ -103,7 +103,7 @@ namesBupa = [
     'drinks',
     'selector'
 ]
-dataset = pd.read_csv(path, names=namesIris)
+dataset = pd.read_csv(path, header=None)
 
 
 ##Dataset preprocessing
